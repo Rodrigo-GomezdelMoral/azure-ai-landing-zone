@@ -1,0 +1,50 @@
+// Named queries for log-aiplatform-shared-swc. They use documented columns only.
+// Diagnostic settings export metrics without their dimensions, so splits by model deployment or by
+// indexer outcome exist only in Azure Monitor metrics; monitoring/workbook.json charts the model split.
+
+// TokensPerDay — daily prompt and completion tokens per Foundry account; the per-model split is in the workbook.
+AzureMetrics
+| where TimeGenerated > ago(30d)
+| where ResourceProvider == "MICROSOFT.COGNITIVESERVICES"
+| where MetricName in ("ProcessedPromptTokens", "GeneratedTokens")
+| summarize Tokens = sum(Total) by Day = startofday(TimeGenerated), Account = Resource, MetricName
+| order by Day desc, Account asc
+
+// RequestsByProject — daily operations recorded by each Foundry project's own diagnostic setting.
+AzureDiagnostics
+| where TimeGenerated > ago(30d)
+| where ResourceProvider == "MICROSOFT.COGNITIVESERVICES" and _ResourceId has "/projects/"
+| extend Project = extract(@"/projects/([^/]+)$", 1, _ResourceId)
+| summarize Requests = count() by Day = startofday(TimeGenerated), Project, OperationName
+| order by Day desc, Requests desc
+
+// FailedAuthentications — 401 and 403 responses from Foundry and Search, and failed registry logins, last 24 hours.
+union
+    (AzureDiagnostics
+    | where ResourceProvider in ("MICROSOFT.COGNITIVESERVICES", "MICROSOFT.SEARCH")
+    | extend Status = coalesce(ResultSignature, tostring(toint(column_ifexists("resultSignature_d", real(null)))))
+    | where Status in ("401", "403")
+    | project TimeGenerated, Target = Resource, OperationName, Status, Caller = CallerIPAddress),
+    (ContainerRegistryLoginEvents
+    | where ResultDescription != "200"
+    | project TimeGenerated, Target = LoginServer, OperationName, Status = ResultDescription, Caller = CallerIpAddress)
+| where TimeGenerated > ago(24h)
+| summarize Failures = count(), LastSeen = max(TimeGenerated) by Target, OperationName, Status, Caller
+| order by Failures desc
+
+// IndexerActivity — indexer, indexing and skillset calls per index with their failures, last 7 days.
+// Scheduled run results are not logged; chart DocumentsProcessedCount split by Failed in Azure Monitor metrics.
+AzureDiagnostics
+| where TimeGenerated > ago(7d)
+| where ResourceProvider == "MICROSOFT.SEARCH"
+| where OperationName startswith "Indexers." or OperationName startswith "Indexing." or OperationName startswith "Skillsets."
+| extend Index = tostring(column_ifexists("IndexName_s", "")), Documents = toint(column_ifexists("Documents_d", real(null)))
+| summarize Calls = count(), Failures = countif(ResultType != "Success"), Documents = sum(Documents) by OperationName, Index
+| order by Failures desc, Calls desc
+
+// SlowestOperations — the 20 slowest operation types by 95th-percentile duration across Foundry and Search, last 24 hours.
+AzureDiagnostics
+| where TimeGenerated > ago(24h)
+| where ResourceProvider in ("MICROSOFT.COGNITIVESERVICES", "MICROSOFT.SEARCH") and isnotnull(DurationMs)
+| summarize Calls = count(), P50 = percentile(DurationMs, 50), P95 = percentile(DurationMs, 95) by Resource, OperationName
+| top 20 by P95 desc

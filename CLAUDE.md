@@ -105,7 +105,13 @@ Tags on every resource: `workload`, `env`, `owner: 'portfolio'`, `managedBy: 'bi
 - Application Insights ingestion has no private link path here; egress FQDNs go in `docs/security.md`.
 - Policy assignments (subscription scope): require `repo` tag, deny public blob, audit missing
   diagnostic settings. Effects `Audit`/`Deny`/`AuditIfNotExists` only — no policy identity.
-- Budget at subscription scope, notifying the action group.
+- Budget at subscription scope in `governance.bicep`, notifying the action group. Its start date
+  is immutable after creation, so it is a fixed parameter, never `utcNow()`. Budgets take no tags.
+- Monitoring data: diagnostic settings export metrics without dimensions, and Cognitive Services
+  is not supported by DCR metrics export. `queries.kql` uses documented Log Analytics columns only
+  (checked with the Kusto analyzer); per-model splits live in `workbook.json` via Azure Monitor
+  metrics. Foundry projects need their own diagnostic setting (`Audit`, `Trace`) for
+  `RequestsByProject`.
 - Open: built-in policy definitions are GUID-named, so the GUID grep will list three public
   built-in IDs. Default: reference built-ins, declared once and named. Role definitions resolve by
   name with `roleDefinitions()` if what-if accepts it.
