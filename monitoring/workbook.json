@@ -1,0 +1,149 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "## Model usage and error rate by repo\nPick a `repo` tag value to chart every Foundry account that carries it. Charts read Azure Monitor metrics directly, because diagnostic settings export metrics without the model deployment dimension."
+      },
+      "name": "intro"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "crossComponentResources": ["value::all"],
+        "parameters": [
+          {
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "label": "Time range",
+            "type": 4,
+            "isRequired": true,
+            "value": { "durationMs": 604800000 },
+            "typeSettings": {
+              "selectableValues": [
+                { "durationMs": 86400000 },
+                { "durationMs": 604800000 },
+                { "durationMs": 2592000000 }
+              ],
+              "allowCustom": true
+            }
+          },
+          {
+            "version": "KqlParameterItem/1.0",
+            "name": "Repo",
+            "label": "Repo",
+            "type": 2,
+            "isRequired": true,
+            "query": "Resources\r\n| where type =~ 'microsoft.cognitiveservices/accounts' and isnotempty(tags.repo)\r\n| distinct Repo = tostring(tags.repo)\r\n| order by Repo asc\r\n| project value = Repo, label = Repo, selected = Repo == 'azure-ai-landing-zone'",
+            "crossComponentResources": ["value::all"],
+            "typeSettings": { "additionalResourceOptions": [], "showDefault": false },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources"
+          },
+          {
+            "version": "KqlParameterItem/1.0",
+            "name": "Accounts",
+            "label": "Accounts",
+            "type": 5,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "Resources\r\n| where type =~ 'microsoft.cognitiveservices/accounts' and tostring(tags.repo) == '{Repo}'\r\n| project value = id, label = name, selected = true",
+            "crossComponentResources": ["value::all"],
+            "typeSettings": { "additionalResourceOptions": ["value::all"], "showDefault": false },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources"
+          }
+        ],
+        "style": "pills",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources"
+      },
+      "name": "parameters"
+    },
+    {
+      "type": 10,
+      "content": {
+        "version": "MetricsItem/2.0",
+        "size": 0,
+        "chartType": 2,
+        "resourceType": "microsoft.cognitiveservices/accounts",
+        "metricScope": 0,
+        "resourceParameter": "Accounts",
+        "resourceIds": ["{Accounts}"],
+        "timeContextFromParameter": "TimeRange",
+        "timeContext": { "durationMs": 604800000 },
+        "metrics": [
+          {
+            "namespace": "microsoft.cognitiveservices/accounts",
+            "metric": "microsoft.cognitiveservices/accounts--TokenTransaction",
+            "aggregation": 1,
+            "splitBy": "ModelDeploymentName",
+            "splitBySortOrder": -1,
+            "splitByLimit": 10
+          }
+        ],
+        "title": "Tokens per model deployment"
+      },
+      "name": "tokens-by-model"
+    },
+    {
+      "type": 10,
+      "content": {
+        "version": "MetricsItem/2.0",
+        "size": 0,
+        "chartType": 2,
+        "resourceType": "microsoft.cognitiveservices/accounts",
+        "metricScope": 0,
+        "resourceParameter": "Accounts",
+        "resourceIds": ["{Accounts}"],
+        "timeContextFromParameter": "TimeRange",
+        "timeContext": { "durationMs": 604800000 },
+        "metrics": [
+          {
+            "namespace": "microsoft.cognitiveservices/accounts",
+            "metric": "microsoft.cognitiveservices/accounts--AzureOpenAIRequests",
+            "aggregation": 1,
+            "splitBy": "StatusCode",
+            "splitBySortOrder": -1,
+            "splitByLimit": 10
+          }
+        ],
+        "title": "Requests by status code — 4xx and 5xx are the error rate"
+      },
+      "customWidth": "50",
+      "name": "requests-by-status"
+    },
+    {
+      "type": 10,
+      "content": {
+        "version": "MetricsItem/2.0",
+        "size": 0,
+        "chartType": 2,
+        "resourceType": "microsoft.cognitiveservices/accounts",
+        "metricScope": 0,
+        "resourceParameter": "Accounts",
+        "resourceIds": ["{Accounts}"],
+        "timeContextFromParameter": "TimeRange",
+        "timeContext": { "durationMs": 604800000 },
+        "metrics": [
+          {
+            "namespace": "microsoft.cognitiveservices/accounts",
+            "metric": "microsoft.cognitiveservices/accounts--AzureOpenAIAvailabilityRate",
+            "aggregation": 4,
+            "splitBy": "ModelDeploymentName",
+            "splitBySortOrder": 1,
+            "splitByLimit": 10
+          }
+        ],
+        "title": "Availability per model deployment — 100 % minus the 5xx rate"
+      },
+      "customWidth": "50",
+      "name": "availability-by-model"
+    }
+  ],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}
