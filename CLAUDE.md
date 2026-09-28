@@ -105,7 +105,10 @@ Tags on every resource: `workload`, `env`, `owner: 'portfolio'`, `managedBy: 'bi
   trusted service; a shared private link does not carry them. Its private endpoint waits for the
   projects, because binding before the account converges fails.
 - Search: public network access disabled, RBAC-only, system-assigned identity with
-  **Cognitive Services OpenAI User** on the Foundry account; Foundry is the billable enrichment resource.
+  **Cognitive Services OpenAI User** (vectorisation) and **Cognitive Services User** (keyless
+  enrichment billing, whose data actions already include the first) on the Foundry account. The
+  billing path is a shared private link (`cognitiveservices_account`) that `make approve-links`
+  approves on the Foundry side. Skillsets are workload-owned and use `AIServicesByIdentity`.
 - Private endpoints for Foundry and Search live in the hub RG, in `snet-privatelink`.
 - Diagnostic settings to the shared workspace: Foundry `Audit`, `RequestResponse`, `Trace`;
   Search `OperationLogs`; ACR `ContainerRegistryRepositoryEvents`, `ContainerRegistryLoginEvents`;
@@ -121,9 +124,9 @@ Tags on every resource: `workload`, `env`, `owner: 'portfolio'`, `managedBy: 'bi
   (checked with the Kusto analyzer); per-model splits live in `workbook.json` via Azure Monitor
   metrics. Foundry projects need their own diagnostic setting (`Audit`, `Trace`) for
   `RequestsByProject`.
-- Open: built-in policy definitions are GUID-named, so the GUID grep will list three public
-  built-in IDs. Default: reference built-ins, declared once and named. Role definitions resolve by
-  name with `roleDefinitions()` if what-if accepts it.
+- Built-in role and policy definitions are referenced by their public IDs, each declared once with
+  its display name beside it (Microsoft advises IDs while roles are renamed). The GUID grep
+  therefore lists the zero placeholder plus these public constants, reported as such.
 
 ## `main.bicep` outputs
 

@@ -1,11 +1,14 @@
 # Entry points shared by local runs and .github/workflows. Every az call carries --only-show-errors.
 LOCATION    ?= swedencentral
-DEPLOYMENT  ?= aiplatform-landing-zone
+WORKLOAD    ?= aiplatform
+DEPLOYMENT  ?= $(WORKLOAD)-landing-zone
 PARAMS      := infra/main.bicepparam
 BICEP       := $(wildcard infra/*.bicep infra/modules/*.bicep)
 DEPLOY_ARGS  = --name $(DEPLOYMENT) --location $(LOCATION) --parameters $(PARAMS) --only-show-errors
+SEARCH      := srch-$(WORKLOAD)-shared-swc
+PENDING      = [?properties.privateLinkServiceConnectionState.status=='Pending' && properties.privateLinkServiceConnectionState.description=='Enrichment billing for $(SEARCH)'].id
 
-.PHONY: build lint what-if deploy
+.PHONY: build lint what-if deploy approve-links
 
 build:
 	@for f in $(BICEP); do az bicep build --file $$f --stdout --only-show-errors > /dev/null || exit 1; done
@@ -25,3 +28,12 @@ what-if: build lint
 
 deploy: build lint
 	az deployment sub create $(DEPLOY_ARGS)
+
+# Search's billing link to Foundry stays Pending until the Foundry side approves it; only that request is approved.
+approve-links:
+	@for id in $$(az network private-endpoint-connection list --resource-group rg-$(WORKLOAD)-shared-swc \
+		--name fdry-$(WORKLOAD)-shared-swc --type Microsoft.CognitiveServices/accounts \
+		--query "$(PENDING)" -o tsv --only-show-errors); do \
+		az network private-endpoint-connection approve --id $$id --description "Approved for $(SEARCH)" \
+			--only-show-errors -o none && echo "approved $${id##*/}"; \
+	done
