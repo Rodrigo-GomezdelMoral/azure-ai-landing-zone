@@ -126,6 +126,41 @@ Option 4 adds a resolver that is only needed when clients outside Azure must res
 stay private, or egress is forced through a firewall that cannot allow the ingestion FQDNs (one
 AMPLS, owned by the hub); a workload adopts a service type with no zone here (add it).
 
+## ADR-005 Rejected: a Premium registry behind a private endpoint
+
+**Context.** The four workloads push and pull images from one shared registry. Every other shared
+service is reachable only through a private endpoint (ADR-004), but Container Registry offers
+private endpoints only on the Premium tier.
+
+**Options.**
+1. Basic with a public endpoint, the admin user disabled and pulls authorised by `AcrPull`.
+2. Premium with a private endpoint and public network access disabled.
+3. One Basic registry per workload.
+
+**Decision.** Option 1. Premium is rejected at this scale.
+
+| Sweden Central retail, September 2026 | Unit price | Per month |
+|---|---|---|
+| Basic registry | €0.1431 per day | €4.35 |
+| Premium registry | €1.431 per day | €43.53 |
+| Private endpoint | €0.0086 per hour | €6.28 |
+
+Private access would cost €49.81 a month instead of €4.35 — ten times Basic for the registry alone,
+eleven with its endpoint — to shield a registry whose images carry code, not customer data.
+
+**Trade-offs.** The registry answers on the internet, so anyone can attempt to authenticate; the
+attempts are logged in `ContainerRegistryLoginEvents`, surfaced by the `FailedAuthentications`
+query, and succeed only with an Entra token for an identity holding a registry role — there is no
+admin user or anonymous pull. Basic has no geo-replication, dedicated data endpoints, customer-managed
+keys or retention of untagged manifests, and includes 10 GiB of storage. A spoke that restricts
+egress must allow the registry's login server and data endpoint ([security.md](security.md)).
+Option 3 buys repository isolation that repository-scoped permissions give inside one registry.
+
+**Revisit when.** A workload must pull with no internet egress at all, images outgrow 10 GiB, or
+workloads must be confined to their own repositories — which means switching the registry to
+repository-scoped (ABAC) permissions, where `AcrPull` is no longer honoured and repository roles
+replace it.
+
 ## ADR-008 One Foundry project per agent workload
 
 **Context.** P01 and P02 build agents with Microsoft Agent Framework's `FoundryChatClient`, which
