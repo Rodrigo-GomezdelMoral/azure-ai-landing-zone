@@ -33,6 +33,60 @@ routing features that four spokes without transit traffic do not use.
 arrives, or the number of spokes makes hand-managed peering error-prone — then Azure Virtual
 Network Manager or Virtual WAN.
 
+## ADR-002 DataZone Standard in the EU zone, not Global Standard
+
+**Context.** The workloads send EU regulatory and health content to the models. For every Foundry
+deployment type, data at rest stays in the resource's geography; what differs is where inference
+runs. Global types may process a request in any Azure region, Data Zone types only within the
+Microsoft-specified zone of the resource (EU for Sweden Central), and regional Standard within the
+Azure geography.
+
+**Options.**
+1. Global Standard — highest default quota, first access to new models.
+2. DataZone Standard — pay-per-token, inference confined to the EU data zone.
+3. Regional Standard — not offered for `gpt-5-mini`, `gpt-5-nano` or `text-embedding-3-small`
+   in Sweden Central.
+4. DataZone Provisioned — reserved throughput, billed whether or not it is used.
+
+**Decision.** Option 2 for all three deployments. Embeddings follow the chat models: chunks of the
+same documents are sent to them, so the same boundary applies. Deployments pin their model version
+and upgrade only when it expires (`OnceCurrentVersionExpired`), which keeps evaluation baselines
+comparable until retirement instead of failing on it.
+
+**Trade-offs.** New models reach Global first, then Data Zone. Quota is separate and smaller: when
+this was written, the target subscription had 500 K tokens per minute of Global Standard quota for
+`gpt-5-mini` and none of DataZone Standard for either chat model, so a quota request is a
+prerequisite of the first deployment — ARM preflight rejects it otherwise. Option 1 would remove
+that step and offers no control over where a prompt is processed.
+
+**Revisit when.** Demand outgrows DataZone quota (option 4), a workload needs a model that has no
+Data Zone offer, or a contract requires processing within Sweden rather than within the EU.
+
+## ADR-003 Managed identity instead of keys
+
+**Context.** Four workloads call shared services. An API key is a shared secret with full data-plane
+power: it cannot say who called, it cannot be scoped to one project or index, and every copy must
+be rotated when one leaks.
+
+**Options.**
+1. Keys, stored in each workload's Key Vault and rotated on a schedule.
+2. Entra ID only: managed identities with role assignments, local authentication disabled.
+3. Entra ID for workloads, keys for service-to-service calls.
+
+**Decision.** Option 2. Foundry and Log Analytics run with `disableLocalAuth: true`, Search accepts
+only RBAC, and the registry's admin user is disabled. Service-to-service calls use system-assigned
+identities — Search reaches the Foundry embedding deployment with its own identity. Each workload
+repository grants its own identities the roles it needs on its own scope: Foundry User on its
+project, index roles on Search, `AcrPull` on the registry.
+
+**Trade-offs.** Every caller, including a developer's workstation, needs a role assignment before
+the first call, and new assignments take a few minutes to propagate. Callers are attributable in
+the logs, and removing one role assignment revokes one caller without touching the others. There is
+no break-glass key; re-enabling local authentication is a reviewed change to this repository.
+
+**Revisit when.** A required integration accepts only keys — give it a dedicated resource rather than
+enabling local authentication on a shared one.
+
 ## ADR-004 Private endpoints with DNS owned by the hub
 
 **Context.** The workloads handle EU regulatory and health content, so data-plane traffic to Azure
@@ -71,3 +125,30 @@ Option 4 adds a resolver that is only needed when clients outside Azure must res
 **Revisit when.** On-premises or partner networks must resolve the zones (option 4); telemetry must
 stay private, or egress is forced through a firewall that cannot allow the ingestion FQDNs (one
 AMPLS, owned by the hub); a workload adopts a service type with no zone here (add it).
+
+## ADR-008 One Foundry project per agent workload
+
+**Context.** P01 and P02 build agents with Microsoft Agent Framework's `FoundryChatClient`, which
+targets a project endpoint, and publish their evaluation runs to that project. P03 and P04 call
+models but run no agents. A project is a child of the Foundry account: it shares the account's model
+deployments and private endpoint, and has its own identity, access boundary and evaluation history.
+
+**Options.**
+1. One project shared by every workload.
+2. One project per workload, four in total.
+3. One project per agent workload: `proj-ragplatform` for P01, `proj-fopcopilot` for P02.
+4. One Foundry account per workload.
+
+**Decision.** Option 3. Each agent workload repository grants its own identity the Foundry User role
+(formerly Azure AI User) on its own project and nothing on the other. P03 and P04 call the account's
+deployments with Cognitive Services OpenAI User and get no project.
+
+**Trade-offs.** Option 1 mixes two evaluation histories and makes a grant on the project a grant on
+both workloads' agents. Option 2 adds two empty projects, each with an identity, diagnostic setting
+and role assignments to review, for workloads with nothing to put in them. Option 4 duplicates the
+private endpoint, guardrail and deployments without adding capacity: model quota is per subscription,
+region and model, so separate accounts split it rather than grow it. Grants on the account cover all
+of its deployments; there is no per-deployment role scope.
+
+**Revisit when.** P03 or P04 adopts agents or evaluation runs — add one entry to the project map in
+`foundry.bicep` — or a workload needs capacity isolated from the others.

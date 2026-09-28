@@ -13,8 +13,8 @@ param serviceId string
 @description('Private link sub-resource of the target service, such as account or searchService.')
 param groupId string
 
-@description('Resource IDs of the private DNS zones that receive the endpoint records.')
-param dnsZoneIds string[]
+@description('Names of the hub private DNS zones that receive the endpoint records.')
+param dnsZoneNames string[]
 
 @description('Tags applied to every resource, including the network interface Azure creates.')
 param tags object
@@ -39,7 +39,9 @@ resource dnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2
   parent: endpoint
   name: 'default'
   properties: {
-    privateDnsZoneConfigs: [for zoneId in dnsZoneIds: { name: last(split(zoneId, '/')), properties: { privateDnsZoneId: zoneId } }]
+    privateDnsZoneConfigs: [
+      for zone in dnsZoneNames: { name: zone, properties: { privateDnsZoneId: resourceId('Microsoft.Network/privateDnsZones', zone) } }
+    ]
   }
 }
 
