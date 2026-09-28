@@ -77,6 +77,9 @@ The Foundry private endpoint (sub-resource `account`) registers records in the f
 | ADR | Decision |
 |---|---|
 | [001](docs/adr.md#adr-001-hub-and-spoke-network) | Hub-and-spoke network |
+| [002](docs/adr.md#adr-002-datazone-standard-in-the-eu-zone-not-global-standard) | DataZone Standard in the EU zone, not Global Standard |
+| [003](docs/adr.md#adr-003-managed-identity-instead-of-keys) | Managed identity instead of keys |
 | [004](docs/adr.md#adr-004-private-endpoints-with-dns-owned-by-the-hub) | Private endpoints with DNS owned by the hub, and the Application Insights exception |
+| [008](docs/adr.md#adr-008-one-foundry-project-per-agent-workload) | One Foundry project per agent workload |
 
 ## Scope and simplifications

@@ -66,6 +66,11 @@ Deviations from the requested 32-file layout, made to fit the 24-file budget:
 - `make build lint` must pass. `--only-show-errors` hides linter warnings and `az bicep lint`
   exits 0 on warnings, so the lint gate fails on any `ruleId` in the SARIF output.
 - `make what-if` against the target subscription before a phase touching `main.bicep` closes.
+- What-if skips a whole nested module when any of its parameters comes from another module's
+  output, yet still reports success. `main.bicep` passes IDs built from names with `resourceId()`
+  and states the ordering with `dependsOn`; module outputs feed only the template outputs.
+- `gpt-5-mini` and `gpt-5-nano` have zero DataZone Standard quota in the target subscription, so
+  what-if preflight fails with `InsufficientQuota` until a quota request is granted (ADR-002).
 - Grep checks from the definition of done are run from the repo root with `--exclude-dir=.git`.
 
 ## Naming, region and tags
@@ -94,7 +99,11 @@ Tags on every resource: `workload`, `env`, `owner: 'portfolio'`, `managedBy: 'bi
   disabled, project management enabled. `gpt-5-mini` and `gpt-5-nano` on DataZone Standard (EU),
   `text-embedding-3-small` per current availability, guardrail on chat deployments.
 - Projects only for agent workloads: P01 `proj-ragplatform`, P02 `proj-fopcopilot`. Each workload
-  repo grants its own identity **Azure AI User** on its own project (ADR-008).
+  repo grants its own identity **Foundry User** (renamed from Azure AI User) on its own project
+  (ADR-008). Microsoft advises role IDs over names while role renames roll out.
+- Foundry keeps `networkAcls.bypass: AzureServices`: Search's embedding calls reach it as a
+  trusted service; a shared private link does not carry them. Its private endpoint waits for the
+  projects, because binding before the account converges fails.
 - Search: public network access disabled, RBAC-only, system-assigned identity with
   **Cognitive Services OpenAI User** on the Foundry account; Foundry is the billable enrichment resource.
 - Private endpoints for Foundry and Search live in the hub RG, in `snet-privatelink`.
