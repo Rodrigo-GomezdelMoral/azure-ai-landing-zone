@@ -53,11 +53,11 @@ same documents are sent to them, so the same boundary applies. Deployments pin t
 and upgrade only when it expires (`OnceCurrentVersionExpired`), which keeps evaluation baselines
 comparable until retirement instead of failing on it.
 
-**Trade-offs.** New models reach Global first, then Data Zone. Quota is separate and smaller: when
-this was written, the target subscription had 500 K tokens per minute of Global Standard quota for
-`gpt-5-mini` and none of DataZone Standard for either chat model, so a quota request is a
-prerequisite of the first deployment — ARM preflight rejects it otherwise. Option 1 would remove
-that step and offers no control over where a prompt is processed.
+**Trade-offs.** New models reach Global first, then Data Zone. Quota is separate and smaller: the
+target subscription started with 500 K tokens per minute of Global Standard quota for `gpt-5-mini`
+and none of DataZone Standard for either chat model, so the first deployment waited on a quota
+request — ARM preflight rejects any deployment above quota. Option 1 would have skipped that wait
+and offers no control over where a prompt is processed.
 
 **Revisit when.** Demand outgrows DataZone quota (option 4), a workload needs a model that has no
 Data Zone offer, or a contract requires processing within Sweden rather than within the EU.
