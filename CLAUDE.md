@@ -69,8 +69,9 @@ Deviations from the requested 32-file layout, made to fit the 24-file budget:
 - What-if skips a whole nested module when any of its parameters comes from another module's
   output, yet still reports success. `main.bicep` passes IDs built from names with `resourceId()`
   and states the ordering with `dependsOn`; module outputs feed only the template outputs.
-- `gpt-5-mini` and `gpt-5-nano` have zero DataZone Standard quota in the target subscription, so
-  what-if preflight fails with `InsufficientQuota` until a quota request is granted (ADR-002).
+- DataZone Standard quota for `gpt-5-mini` and `gpt-5-nano` started at zero and was granted on
+  request (300 and 2,000 units); ARM preflight rejects any deployment above quota (ADR-002).
+  Full `main.bicep` what-if: Succeeded, 63 creates, no skipped modules.
 - Grep checks from the definition of done are run from the repo root with `--exclude-dir=.git`.
 
 ## Naming, region and tags
@@ -124,6 +125,10 @@ Tags on every resource: `workload`, `env`, `owner: 'portfolio'`, `managedBy: 'bi
   (checked with the Kusto analyzer); per-model splits live in `workbook.json` via Azure Monitor
   metrics. Foundry projects need their own diagnostic setting (`Audit`, `Trace`) for
   `RequestsByProject`.
+- The Deny tag policy (built-in, fixed effect) also denies untagged resources Azure creates on a
+  workload's behalf (Network Watcher, managed resource groups); `docs/security.md` covers exemptions.
+  The diagnostic audit lists only types whose settings carry logs and metrics, to avoid false findings.
+- Bicep sits at 750/750 after phase 6; any later Bicep change must remove a line elsewhere.
 - Built-in role and policy definitions are referenced by their public IDs, each declared once with
   its display name beside it (Microsoft advises IDs while roles are renamed). The GUID grep
   therefore lists the zero placeholder plus these public constants, reported as such.
