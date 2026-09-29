@@ -56,8 +56,9 @@ comparable until retirement instead of failing on it.
 **Trade-offs.** New models reach Global first, then Data Zone. Quota is separate and smaller: the
 target subscription started with 500 K tokens per minute of Global Standard quota for `gpt-5-mini`
 and none of DataZone Standard for either chat model, so the first deployment waited on a quota
-request — ARM preflight rejects any deployment above quota. Option 1 would have skipped that wait
-and offers no control over where a prompt is processed.
+request — ARM preflight rejects any deployment above quota. Tokens cost 10 % more than on Global
+Standard, €1.67 a month at the volumes assumed in [cost.md](cost.md). Option 1 would have skipped
+the wait and offers no control over where a prompt is processed.
 
 **Revisit when.** Demand outgrows DataZone quota (option 4), a workload needs a model that has no
 Data Zone offer, or a contract requires processing within Sweden rather than within the EU.
@@ -160,6 +161,61 @@ Option 3 buys repository isolation that repository-scoped permissions give insid
 workloads must be confined to their own repositories — which means switching the registry to
 repository-scoped (ABAC) permissions, where `AcrPull` is no longer honoured and repository roles
 replace it.
+
+## ADR-006 Rejected: Azure Firewall, NAT Gateway and forced tunnelling
+
+**Context.** Enterprise landing zones usually route every spoke's internet egress through a hub
+firewall with a `0.0.0.0/0` user-defined route, for FQDN allow-listing and inspection. Here the
+data services sit behind private endpoints, and what leaves the spokes for the internet is
+telemetry, image pulls and package downloads.
+
+**Options.**
+1. Azure Firewall Standard in the hub, with forced tunnelling from every spoke.
+2. A NAT Gateway per spoke, for a fixed egress address.
+3. No central egress control: private endpoints for data, NSGs in each spoke, the platform's
+   outbound path for the rest.
+
+**Decision.** Option 3, at this scale.
+
+**Cost.** In Sweden Central, Azure Firewall Standard is €1.0733 an hour — €783.51 a month plus
+€0.0137 per GB processed, 8.5 times the fixed cost of this entire landing zone (€92.49). A NAT
+Gateway is €28.18 a month plus €0.0386 per GB, €112.71 for four spokes, and adds an egress address,
+not a control.
+
+**Trade-offs.** Egress is neither inspected nor limited to named FQDNs, so exfiltration to an
+allowed public endpoint is not blocked centrally; each spoke's NSGs are the only filter, at layer 4.
+Spokes stay isolated from each other because peering is non-transitive (ADR-001).
+
+**Revisit when.** A contract or regulator requires egress allow-listing or inspection; a partner
+must allow-list a fixed source address (a NAT Gateway on that spoke); spokes need transit between
+them; or a workload runs virtual machines in a subnet with no outbound path — virtual networks
+created with network API versions released after 31 March 2026 get private subnets by default.
+
+## ADR-007 Rejected: Terraform
+
+**Context.** The foundation is Azure-only, maintained by one owner, and uses resource types that
+change quickly: Foundry projects, guardrails and DataZone deployments were all written against API
+versions published in 2026.
+
+**Options.**
+1. Bicep, deployed with `az` and `azd`, validated with what-if.
+2. Terraform with the `azurerm` provider.
+3. Terraform with the `azapi` provider.
+
+**Decision.** Option 1.
+
+**Trade-offs.** Bicep has no state file: Azure is the state, so there is no backend storage account
+to secure, lock and back up, and no copy of resource IDs outside Azure. Bicep types are generated
+from the resource provider schemas, so a new API version validates as soon as it is published;
+`azurerm` adds resources on its own release cadence, and `azapi` reaches them only by giving up
+typed validation. What-if is weaker than `terraform plan`: it silently skips a nested module whose
+parameters come from another module's outputs, which is why `main.bicep` builds resource IDs from
+names. Bicep cannot manage GitHub: the environment, its reviewers and the repository secrets are
+configured by hand ([README](../README.md#github-actions-federated-credentials)).
+
+**Revisit when.** The organisation standardises on Terraform, workload repositories need this
+repository's outputs through remote state, or GitHub configuration must be codified alongside the
+Azure resources.
 
 ## ADR-008 One Foundry project per agent workload
 
