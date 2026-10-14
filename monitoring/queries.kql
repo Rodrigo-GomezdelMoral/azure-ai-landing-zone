@@ -1,0 +1,47 @@
+// Token consumption per model per day — which deployment drives Foundry spend, from the request usage log.
+AzureDiagnostics
+| where TimeGenerated > ago(30d)
+| where ResourceProvider == "MICROSOFT.COGNITIVESERVICES" and Category == "AzureOpenAIRequestUsage"
+| extend usage = parse_json(properties_s)
+| summarize PromptTokens = sum(tolong(usage.promptTokens)),
+            CompletionTokens = sum(tolong(usage.completionTokens)),
+            TotalTokens = sum(tolong(usage.totalTokens))
+    by Model = tostring(usage.modelDeploymentName), Day = bin(TimeGenerated, 1d)
+| order by Day desc, TotalTokens desc
+
+// Request volume by application — hourly requests and failures per workload, from the Application Insights data the workloads route to this workspace.
+AppRequests
+| where TimeGenerated > ago(7d)
+| summarize Requests = count(), Failed = countif(Success == false)
+    by Application = AppRoleName, Hour = bin(TimeGenerated, 1h)
+| order by Hour desc, Requests desc
+
+// Failed authentications — 401 and 403 responses on Foundry and AI Search plus rejected registry logins, by resource and caller address.
+union
+    (AzureDiagnostics
+     | where TimeGenerated > ago(7d)
+     | where ResourceProvider in ("MICROSOFT.COGNITIVESERVICES", "MICROSOFT.SEARCH") and ResultSignature in ("401", "403")
+     | project TimeGenerated, Resource, OperationName, Status = ResultSignature, Caller = CallerIPAddress),
+    (ContainerRegistryLoginEvents
+     | where TimeGenerated > ago(7d)
+     | where ResultDescription != "200"
+     | project TimeGenerated, Resource = LoginServer, OperationName, Status = ResultDescription, Caller = CallerIpAddress)
+| summarize Failures = count() by Resource, OperationName, Status, Caller, Hour = bin(TimeGenerated, 1h)
+| order by Hour desc, Failures desc
+
+// Indexer run outcomes — indexer operations and the documents they wrote per index and result, failures first.
+AzureDiagnostics
+| where TimeGenerated > ago(7d)
+| where ResourceProvider == "MICROSOFT.SEARCH"
+| where OperationName startswith "Indexers." or OperationName == "Indexing.Index"
+| summarize Operations = count(), Documents = sum(Documents_d),
+            Failed = countif(ResultType != "Success"), LastSeen = max(TimeGenerated)
+    by Index = IndexName_s, OperationName, Day = bin(TimeGenerated, 1d)
+| order by Failed desc, Day desc
+
+// Slowest operations — p95 and maximum duration per resource and operation over the last day, worst first.
+AzureDiagnostics
+| where TimeGenerated > ago(1d)
+| where ResourceProvider in ("MICROSOFT.COGNITIVESERVICES", "MICROSOFT.SEARCH") and isnotempty(DurationMs)
+| summarize Calls = count(), P95Ms = percentile(DurationMs, 95), MaxMs = max(DurationMs) by Resource, OperationName
+| top 10 by P95Ms desc
