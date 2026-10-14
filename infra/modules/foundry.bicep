@@ -20,11 +20,7 @@ param logAnalyticsWorkspaceId string
 
 var harmCategories = ['Hate', 'Sexual', 'Violence', 'Selfharm']
 var harmFilters = flatten(map(['Prompt', 'Completion'], source => map(harmCategories, category => {
-  name: category
-  severityThreshold: 'Medium'
-  blocking: true
-  enabled: true
-  source: source
+  name: category, severityThreshold: 'Medium', blocking: true, enabled: true, source: source
 })))
 var shieldFilters = [
   { name: 'Jailbreak', blocking: true, enabled: true, source: 'Prompt' }
@@ -39,12 +35,7 @@ resource account 'Microsoft.CognitiveServices/accounts@2026-07-01' = {
   kind: 'AIServices'
   sku: { name: 'S0' }
   identity: { type: 'SystemAssigned' }
-  properties: {
-    customSubDomainName: accountName
-    allowProjectManagement: true
-    disableLocalAuth: true
-    publicNetworkAccess: 'Enabled'
-  }
+  properties: { customSubDomainName: accountName, allowProjectManagement: true, disableLocalAuth: true, publicNetworkAccess: 'Enabled' }
 }
 
 resource project 'Microsoft.CognitiveServices/accounts/projects@2026-07-01' = {
@@ -85,11 +76,7 @@ resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2026-07-01
 resource diagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
   name: 'to-shared-workspace'
   scope: account
-  properties: {
-    workspaceId: logAnalyticsWorkspaceId
-    logs: [{ categoryGroup: 'allLogs', enabled: true }]
-    metrics: [{ category: 'AllMetrics', enabled: true }]
-  }
+  properties: { workspaceId: logAnalyticsWorkspaceId, logs: [{ categoryGroup: 'allLogs', enabled: true }], metrics: [{ category: 'AllMetrics', enabled: true }] }
 }
 
 @description('Account name.')

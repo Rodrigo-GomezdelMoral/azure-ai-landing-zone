@@ -23,11 +23,7 @@ resource workspace 'Microsoft.OperationalInsights/workspaces@2026-03-01' = {
   name: workspaceName
   location: location
   tags: tags
-  properties: {
-    sku: { name: 'PerGB2018' }
-    retentionInDays: retentionInDays
-    features: { disableLocalAuth: true }
-  }
+  properties: { sku: { name: 'PerGB2018' }, retentionInDays: retentionInDays, features: { disableLocalAuth: true } }
 }
 
 resource actionGroup 'Microsoft.Insights/actionGroups@2023-01-01' = {
@@ -37,13 +33,7 @@ resource actionGroup 'Microsoft.Insights/actionGroups@2023-01-01' = {
   properties: {
     groupShortName: 'aiplatform'
     enabled: true
-    emailReceivers: [
-      {
-        name: 'platform-owner'
-        emailAddress: alertEmailAddress
-        useCommonAlertSchema: true
-      }
-    ]
+    emailReceivers: [{ name: 'platform-owner', emailAddress: alertEmailAddress, useCommonAlertSchema: true }]
   }
 }
 
