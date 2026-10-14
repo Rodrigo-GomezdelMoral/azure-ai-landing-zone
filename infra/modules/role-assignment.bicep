@@ -1,13 +1,10 @@
 @description('Name of the Foundry account in this resource group that the role is granted on.')
 param foundryAccountName string
-
 @description('Object id of the principal that receives the role.')
 param principalId string
-
 @description('Principal type, stated explicitly so the assignment succeeds before a new identity has replicated.')
 @allowed(['ServicePrincipal', 'User', 'Group'])
 param principalType string = 'ServicePrincipal'
-
 @description('Built-in role definition id, without the subscription prefix.')
 param roleDefinitionId string
 
