@@ -26,5 +26,7 @@ jobs:
       - name: Deploy the shared platform
         env:
           ALERT_EMAIL_ADDRESS: ${{ secrets.ALERT_EMAIL_ADDRESS }}
+          SEARCH_LOCATION: ${{ vars.SEARCH_LOCATION || 'swedencentral' }}
+          SEARCH_REGION_CODE: ${{ vars.SEARCH_REGION_CODE || 'swc' }}
         run: |
           az deployment group create --resource-group "$RESOURCE_GROUP" --name "platform-${{ github.run_id }}" --parameters infra/main.bicepparam --only-show-errors --output none
