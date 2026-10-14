@@ -3,9 +3,8 @@ AzureDiagnostics
 | where TimeGenerated > ago(30d)
 | where ResourceProvider == "MICROSOFT.COGNITIVESERVICES" and Category == "AzureOpenAIRequestUsage"
 | extend usage = parse_json(properties_s)
-| summarize PromptTokens = sum(tolong(usage.promptTokens)),
-            CompletionTokens = sum(tolong(usage.completionTokens)),
-            TotalTokens = sum(tolong(usage.totalTokens))
+| extend prompt = tolong(array_sum(usage.promptTokens)), cached = tolong(array_sum(usage.cachedTokens)), generated = tolong(array_sum(usage.generatedTokens))
+| summarize Calls = count(), PromptTokens = sum(prompt), CachedTokens = sum(cached), GeneratedTokens = sum(generated), TotalTokens = sum(prompt + generated)
     by Model = tostring(usage.modelDeploymentName), Day = bin(TimeGenerated, 1d)
 | order by Day desc, TotalTokens desc
 
@@ -17,7 +16,7 @@ AppRequests
 | order by Hour desc, Requests desc
 
 // Failed authentications — 401 and 403 responses on Foundry and AI Search plus rejected registry logins, by resource and caller address.
-union
+union isfuzzy=true
     (AzureDiagnostics
      | where TimeGenerated > ago(7d)
      | where ResourceProvider in ("MICROSOFT.COGNITIVESERVICES", "MICROSOFT.SEARCH") and ResultSignature in ("401", "403")

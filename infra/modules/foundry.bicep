@@ -13,7 +13,7 @@ param projectName string
 @description('SKU of every model deployment. GlobalStandard routes to any Azure region; DataZoneStandard keeps inference inside the EU data zone.')
 @allowed(['GlobalStandard', 'DataZoneStandard'])
 param modelDeploymentSku string = 'GlobalStandard'
-@description('Model deployments, created one at a time because the account serialises deployment operations.')
+@description('Model deployments. The account serialises child operations, so the project, the guardrail and each deployment are created one after another.')
 param deployments modelDeployment[]
 @description('Resource id of the Log Analytics workspace that receives logs and metrics.')
 param logAnalyticsWorkspaceId string
@@ -53,6 +53,7 @@ resource project 'Microsoft.CognitiveServices/accounts/projects@2026-07-01' = {
 resource guardrail 'Microsoft.CognitiveServices/accounts/raiPolicies@2026-07-01' = {
   parent: account
   name: 'guardrail-chat'
+  dependsOn: [project]
   properties: {
     basePolicyName: 'Microsoft.DefaultV2'
     mode: 'Default'

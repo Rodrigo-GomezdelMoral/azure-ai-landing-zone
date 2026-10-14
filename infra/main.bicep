@@ -20,6 +20,10 @@ param embeddingModel modelDeployment = { name: 'text-embedding-3-small', version
 @description('Search service pricing tier.')
 @allowed(['basic', 'standard'])
 param searchSku string = 'basic'
+@description('Region of the search service. Override only when the platform region has no search capacity to offer.')
+param searchLocation string = 'swedencentral'
+@description('Short code of the search region, used in the service name.')
+param searchRegionCode string = 'swc'
 @description('Monthly budget of this resource group in the billing currency of the subscription.')
 param budgetAmount int = 80
 @description('First day of the month the budget starts; defaults to the current month.')
@@ -59,9 +63,9 @@ module foundry 'modules/foundry.bicep' = {
 module search 'modules/search.bicep' = {
   name: 'search'
   params: {
-    location: location
+    location: searchLocation
     tags: tags
-    searchServiceName: 'srch-${workload}-shared-${regionCode}'
+    searchServiceName: 'srch-${workload}-shared-${searchRegionCode}'
     sku: searchSku
     foundryAccountName: foundry.outputs.accountName
     logAnalyticsWorkspaceId: monitoring.outputs.workspaceId
