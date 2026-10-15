@@ -1,0 +1,5 @@
+.azure/
+*.parameters.json
+.env
+.DS_Store
+.claude/
