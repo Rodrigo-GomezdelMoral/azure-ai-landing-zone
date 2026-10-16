@@ -159,12 +159,17 @@ federated credentials are required on the app registration, one per subject GitH
 
 | Subject | Sent by |
 |---|---|
-| `repo:<org>/azure-ai-landing-zone:ref:refs/heads/main` | pushes to `main` |
-| `repo:<org>/azure-ai-landing-zone:pull_request` | pull request validation |
-| `repo:<org>/azure-ai-landing-zone:environment:production` | `deploy.yml`, which declares the environment |
+| `repo:<owner>@<owner id>/azure-ai-landing-zone@<repository id>:ref:refs/heads/main` | pushes to `main` |
+| `repo:<owner>@<owner id>/azure-ai-landing-zone@<repository id>:pull_request` | pull request validation |
+| `repo:<owner>@<owner id>/azure-ai-landing-zone@<repository id>:environment:production` | `deploy.yml`, which declares the environment |
 
-A job that declares `environment:` sends the environment subject, not the branch subject. If the
-third credential is missing, the first production deployment fails with `AADSTS700213`.
+The subjects carry the owner's and the repository's numeric ids: repositories created after
+15 July 2026 send GitHub's *immutable subject*, which survives a rename or a transfer, and
+`gh api repos/<owner>/<repo>/actions/oidc/customization/sub` prints the exact prefix. A credential
+written in the older name-only form, `repo:<owner>/azure-ai-landing-zone:pull_request`, no longer
+matches and the login fails with `AADSTS700213` *No matching federated identity record found*.
+A job that declares `environment:` sends the environment subject, not the branch subject, so the
+third credential is not optional.
 
 ## Cost
 

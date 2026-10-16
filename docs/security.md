@@ -38,6 +38,10 @@ The CI principal authenticates with OpenID Connect; no client secret exists anyw
 federated credentials are required, one per subject GitHub sends: `ref:refs/heads/main`,
 `pull_request`, and `environment:production`, because a job that declares an environment sends
 the environment subject rather than the branch subject and fails with `AADSTS700213` otherwise.
+Each subject is in GitHub's immutable form, `repo:<owner>@<owner id>/<repo>@<repository id>:…`,
+which is what repositories created after 15 July 2026 send; it binds the trust to the repository's
+identity rather than to its name, so a renamed or re-created repository of the same name cannot
+assume the role (README, *Federated credentials*).
 The workflows never print `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` or `AZURE_SUBSCRIPTION_ID`, never
 enable shell tracing, and pass `--only-show-errors` on every `az` call; the deploy step runs with
 `--output none` so deployment outputs, which contain resource ids, never reach a public log.
