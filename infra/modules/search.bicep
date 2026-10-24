@@ -9,7 +9,7 @@ param searchServiceName string
 param sku string = 'basic'
 @description('Semantic ranker plan: free covers 1,000 requests a month, standard is billed per thousand requests.')
 @allowed(['disabled', 'free', 'standard'])
-param semanticSearch string = 'free'
+param semanticSearch string = 'standard'
 @description('Foundry account the search identity calls for embeddings and for billing built-in skills.')
 param foundryAccountName string
 @description('Resource id of the Log Analytics workspace that receives logs and metrics.')
