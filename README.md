@@ -4,6 +4,9 @@ The shared Azure foundation that four independent AI workloads run on: one resou
 Microsoft Foundry model deployments, Azure AI Search, a container registry and the monitoring and
 budget around them, designed so that **identity, not the network, is the security boundary**.
 
+[![validate](https://github.com/Rodrigo-GomezdelMoral/azure-ai-landing-zone/actions/workflows/validate.yml/badge.svg)](https://github.com/Rodrigo-GomezdelMoral/azure-ai-landing-zone/actions/workflows/validate.yml)
+[![deploy](https://github.com/Rodrigo-GomezdelMoral/azure-ai-landing-zone/actions/workflows/deploy.yml/badge.svg)](https://github.com/Rodrigo-GomezdelMoral/azure-ai-landing-zone/actions/workflows/deploy.yml)
+
 ## Architecture
 
 ```mermaid
@@ -13,7 +16,7 @@ graph TB
         FDRY["fdry-aiplatform-shared-swc<br/>Foundry · AIServices · disableLocalAuth"]
         PROJ["proj-aiplatform-shared"]
         DEP["gpt-5-mini · gpt-5-nano<br/>text-embedding-3-small"]
-        SRCH["srch-aiplatform-shared-swc<br/>AI Search · RBAC only"]
+        SRCH["srch-aiplatform-shared-neu<br/>AI Search · RBAC only · North Europe"]
         ACR["craiplatformsharedswc<br/>Container Registry · Basic"]
         AG["ag-aiplatform-shared"]
         BUD["budget-aiplatform-monthly"]
@@ -150,7 +153,9 @@ The second shows `true`, the third shows `true` with `authOptions` null, and the
 tag that makes cost attribution per repository possible. On an estate that is already deployed,
 `make whatif` reports `Modify` for read-only properties the services return and the template
 does not set (current capacity, deployment state, disabled diagnostic categories, the budget's
-`utcNow` start date); it never reports a `Create` or a `Delete`.
+`utcNow` start date) and for the registry's log destination type, which the service does not
+return although the logs reach their resource-specific tables; it never reports a `Create` or a
+`Delete`.
 
 ## Federated credentials for GitHub Actions
 
@@ -169,7 +174,8 @@ The subjects carry the owner's and the repository's numeric ids: repositories cr
 written in the older name-only form, `repo:<owner>/azure-ai-landing-zone:pull_request`, no longer
 matches and the login fails with `AADSTS700213` *No matching federated identity record found*.
 A job that declares `environment:` sends the environment subject, not the branch subject, so the
-third credential is not optional.
+third credential is not optional. No workflow in this repository runs on push to `main`, so the
+`ref:refs/heads/main` credential is declared for completeness and exercised by nothing today.
 
 ## Cost
 
@@ -178,8 +184,9 @@ method): the shared group as deployed costs about **2.3 a day, 70 to 77 a month*
 ninety percent of it the Basic search service; model usage bills tokens only, about 3.6 per
 thousand regulatory questions. The network-isolated posture — private endpoints, private DNS
 zones, a Premium registry and a jump host — would add about **163 a month**, or 257 with a VPN
-gateway (ADR-002). No measured figure is published until a full day of Cost Management data
-exists; the document says so and gives the query that will replace the estimate.
+gateway (ADR-002). Measured over the eleven full days from 15 to 25 October 2026: 2.28 on a day
+without model usage, as estimated, and 39.76 in total with the model and tool usage billed to the
+shared Foundry account; the document has the breakdown and the query.
 
 ## Architecture decision records
 
@@ -201,8 +208,9 @@ exists; the document says so and gives the query that will replace the estimate.
 - Virtual networks, private endpoints and private DNS zones are designed and costed in ADR-002
   and deliberately not deployed.
 - The search service starts at the Basic tier; the free tier is excluded because it has no
-  managed identity, which the keyless indexer requires. The semantic ranker is on the free plan
-  of 1,000 requests a month.
+  managed identity, which the keyless indexer requires. The semantic ranker is on the standard
+  plan, billed per thousand requests, since 2026-10-24; the free plan's 1,000 requests a month
+  ran out while the workloads were being built.
 - The search service can run in a region of its own. On 2026-10-14 Sweden Central answered four
   consecutive deployments with `InsufficientResourcesAvailable` for a Basic search service, so
   `searchLocation` and `searchRegionCode` (`SEARCH_LOCATION`, `SEARCH_REGION_CODE`) let it run in a

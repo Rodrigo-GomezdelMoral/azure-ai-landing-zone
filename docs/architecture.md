@@ -14,7 +14,7 @@ graph TB
         PROJ["proj-aiplatform-shared<br/>Foundry project · system identity"]
         DEP["gpt-5-mini · gpt-5-nano · text-embedding-3-small<br/>GlobalStandard · NoAutoUpgrade"]
         RAI["guardrail-chat<br/>content filters on the two chat deployments"]
-        SRCH["srch-aiplatform-shared-swc<br/>AI Search Basic · RBAC only · system identity"]
+        SRCH["srch-aiplatform-shared-neu<br/>AI Search Basic · RBAC only · system identity<br/>North Europe"]
         ACR["craiplatformsharedswc<br/>Container Registry Basic · no admin user"]
         LOG["log-aiplatform-shared-swc<br/>Log Analytics · 30 days · no local auth"]
         AG["ag-aiplatform-shared<br/>action group · email"]

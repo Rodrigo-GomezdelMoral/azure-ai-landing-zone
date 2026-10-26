@@ -52,8 +52,9 @@ repository even where a resource is shared. The query that produces the measured
 group, to run after at least one full day of data:
 
 ```bash
-az consumption usage list --start-date "$(date -u -d '-7 days' +%F)" --end-date "$(date -u +%F)" \
-  --query "[?contains(instanceId, 'rg-aiplatform-shared-swc')].{meter:meterId,cost:pretaxCost,currency:currency}" -o table --only-show-errors
+az rest --method post --only-show-errors -o tsv --query "properties.rows" \
+  --url "https://management.azure.com/subscriptions/$(az account show --query id -o tsv)/resourceGroups/rg-aiplatform-shared-swc/providers/Microsoft.CostManagement/query?api-version=2026-08-01" \
+  --body '{"type":"ActualCost","timeframe":"Custom","timePeriod":{"from":"2026-10-15T00:00:00Z","to":"2026-10-25T23:59:59Z"},"dataset":{"granularity":"None","aggregation":{"totalCost":{"name":"Cost","function":"Sum"}},"grouping":[{"type":"Dimension","name":"ServiceName"}]}}'
 ```
 
 Token usage per deployment per day comes from the first query in `monitoring/queries.kql`,
@@ -61,9 +62,20 @@ which reads the `AzureOpenAIRequestUsage` log the diagnostic setting routes to t
 
 ## Measured cost
 
-No measured figure is published yet. The estate was first deployed on 2026-10-14; the first full
-day of Cost Management data is the earliest a measured number can replace the estimate above,
-and it will be added here with the date and the query output that produced it.
+Measured on 2026-10-26 with the query above, over the eleven full days from 15 to 25 October
+2026 (the estate was first deployed on 2026-10-14):
+
+| Service | Measured, 11 days (EUR) |
+|---|---|
+| AI Search | 23.47 |
+| Foundry Models, token usage of the three deployments | 8.46 |
+| Foundry Tools, Document Intelligence | 6.22 |
+| Container Registry | 1.61 |
+| Log Analytics, Azure Monitor | 0 |
+| **Total** | **39.76** |
+
+A day without model usage cost 2.28 (2.13 search, 0.15 registry), in line with the ≈ 2.3
+estimated above; the rest is model and tool usage billed to the shared Foundry account.
 
 ## Keeping the bill at zero between demos
 
