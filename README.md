@@ -9,30 +9,9 @@ budget around them, designed so that **identity, not the network, is the securit
 
 ## Architecture
 
-```mermaid
-graph TB
-    subgraph shared["rg-aiplatform-shared-swc"]
-        LOG["log-aiplatform-shared-swc<br/>Log Analytics"]
-        FDRY["fdry-aiplatform-shared-swc<br/>Foundry · AIServices · disableLocalAuth"]
-        PROJ["proj-aiplatform-shared"]
-        DEP["gpt-5-mini · gpt-5-nano<br/>text-embedding-3-small"]
-        SRCH["srch-aiplatform-shared-neu<br/>AI Search · RBAC only · North Europe"]
-        ACR["craiplatformsharedswc<br/>Container Registry · Basic"]
-        AG["ag-aiplatform-shared"]
-        BUD["budget-aiplatform-monthly"]
-        FDRY --> PROJ
-        FDRY --> DEP
-        SRCH -->|"OpenAI User · Cognitive Services User"| FDRY
-        FDRY -.diagnostics.-> LOG
-        SRCH -.diagnostics.-> LOG
-        ACR -.diagnostics.-> LOG
-        BUD --> AG
-    end
-    RAG["rg-ragplatform-prod-swc"] --> FDRY & SRCH & ACR
-    FOP["rg-fopcopilot-prod-swc"] --> FDRY & SRCH & ACR
-    CARE["rg-careintel-prod-swc"] --> FDRY & ACR
-    SAAS["rg-aisaas-prod-swc"] --> FDRY & SRCH & ACR
-```
+![The shared group: Foundry with its project and three model deployments, AI Search, the container registry, Log Analytics and the budget, consumed by four workload groups](docs/images/architecture.png)
+
+![The shared resource group as deployed, in the Azure portal](docs/images/resource-group.png)
 
 `docs/architecture.md` has the detailed estate, the identity flows and the deployment sequence.
 
@@ -91,6 +70,8 @@ deployment:
    address is never committed; `infra/main.bicepparam` reads it from the environment.
 
 ## Identity and RBAC
+
+![Every service accepts Entra tokens only; each workload identity holds a data-plane role on the shared services](docs/images/identity.png)
 
 | Principal | Role | Scope | Reason |
 |---|---|---|---|
@@ -198,32 +179,3 @@ shared Foundry account; the document has the breakdown and the query.
 | [004](docs/adr/004-model-deployment-sku-and-data-residency.md) | Model deployment SKU, and EU data residency as a one-parameter change |
 | [005](docs/adr/005-no-azure-policy-assignments.md) | Rejection: no Azure Policy assignments at this scale |
 | [006](docs/adr/006-container-registry-basic.md) | Rejection: Container Registry stays Basic rather than Premium with private link |
-
-## Scope and simplifications
-
-- No application code and no Python; this repository is infrastructure, queries and decisions.
-- The file budget of twenty follows the portfolio convention and excludes `docs/`.
-- One Foundry project is shared by all workloads (ADR-001); one deployment per model is shared
-  too, so quota is shared.
-- Virtual networks, private endpoints and private DNS zones are designed and costed in ADR-002
-  and deliberately not deployed.
-- The search service starts at the Basic tier; the free tier is excluded because it has no
-  managed identity, which the keyless indexer requires. The semantic ranker is on the standard
-  plan, billed per thousand requests, since 2026-10-24; the free plan's 1,000 requests a month
-  ran out while the workloads were being built.
-- The search service can run in a region of its own. On 2026-10-14 Sweden Central answered four
-  consecutive deployments with `InsufficientResourcesAvailable` for a Basic search service, so
-  `searchLocation` and `searchRegionCode` (`SEARCH_LOCATION`, `SEARCH_REGION_CODE`) let it run in a
-  neighbouring EU region, named after that region, while the platform region recovers. The
-  defaults remain Sweden Central; keyless skill billing and the embedding skill have no
-  same-region requirement.
-- Diagnostic settings use API version `2021-05-01-preview`, the newest version of that resource
-  type and the only one with category groups; the GA version from 2016 lacks them.
-- `monitoring/queries.kql` holds five queries as portable text instead of a workbook. The token
-  usage query reads fields the diagnostic reference does not document (`promptTokens`,
-  `cachedTokens` and `generatedTokens`, carried as arrays in `properties_s`); they were verified
-  against live `AzureOpenAIRequestUsage` records on 2026-10-14, not against a schema.
-- Hygiene: the only GUIDs in the repository are the two built-in role definition ids in
-  `infra/modules/search.bicep`, which are public constants; a grep for email addresses also
-  matches Bicep's `type@apiVersion` syntax and the `uses: owner/action@version` references in
-  the workflows, and nothing else.
