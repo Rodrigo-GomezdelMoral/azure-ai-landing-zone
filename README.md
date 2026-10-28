@@ -1,5 +1,7 @@
 # Azure AI Landing Zone
 
+Built by **Rodrigo Martín Gómez del Moral Herranz** · [LinkedIn](https://www.linkedin.com/in/rodrigo-mart%C3%ADn-g%C3%B3mez-del-moral-herranz) · [Portfolio](https://rodrigogomez.es)
+
 The shared Azure foundation that four independent AI workloads run on: one resource group holding
 Microsoft Foundry model deployments, Azure AI Search, a container registry and the monitoring and
 budget around them, designed so that **identity, not the network, is the security boundary**.
@@ -85,6 +87,8 @@ Every service accepts Entra tokens only: `disableLocalAuth` on Foundry and on th
 RBAC-only authentication on Search, no admin user on the registry. There is no Key Vault because
 there is no secret to keep (ADR-003). `docs/security.md` has the full posture.
 
+![The search service in the portal accepting role-based access control only, with API keys off](docs/images/search-rbac.png)
+
 ## What the workload repositories consume
 
 The deployment outputs are the interface. Each workload passes them as parameters, references
@@ -120,6 +124,8 @@ In GitHub Actions, `validate.yml` runs on every pull request (build, lint, OIDC 
 `production` environment. Both pass `--only-show-errors` on every `az` call, never print the
 `AZURE_*` identifiers, and the deploy step runs with `--output none` so deployment outputs stay
 out of public logs.
+
+![validate.yml builds, lints and runs what-if on every pull request; deploy.yml runs only by hand, after an approval](docs/images/cicd.png)
 
 ### Verify after deploying
 
@@ -169,6 +175,20 @@ gateway (ADR-002). Measured over the eleven full days from 15 to 25 October 2026
 without model usage, as estimated, and 39.76 in total with the model and tool usage billed to the
 shared Foundry account; the document has the breakdown and the query.
 
+![The shared group's monthly budget in the portal, with the spend evaluated so far](docs/images/budget.png)
+
+## Well-Architected design
+
+How the design maps to the five pillars of the Azure Well-Architected Framework, and the trade-off accepted in each.
+
+| Pillar | Applied | Trade-off accepted |
+|---|---|---|
+| Reliability | One shared group whose deployment outputs are a stable interface for four workloads; redeploys are idempotent, and `what-if` on the deployed estate never reports a create or a delete | One region and one instance of each service: redundancy would multiply the cost of an estate that serves demonstrations |
+| Security | Identity is the boundary: Entra tokens only (`disableLocalAuth`, RBAC-only Search, no registry admin user), no secret to keep, OIDC with no client secret | Private networking designed and costed at about 163 a month, not deployed (ADR-002) |
+| Cost Optimization | About 70 to 77 a month, more than ninety percent of it the Basic search service; models bill tokens only; a monthly budget; the `repo` tag attributes cost per repository | A Basic registry rather than Premium with private link (ADR-006) |
+| Operational Excellence | Bicep built and linted on every pull request, `what-if` against the shared group, a manual deployment through the `production` environment, one naming convention | No Azure Policy assignments at this scale (ADR-005) |
+| Performance Efficiency | Three shared model deployments, a chat model, a small chat model and an embedding model, so each workload calls the smallest one that does the job | Shared deployments: one workload's burst competes with the others for the same capacity |
+
 ## Architecture decision records
 
 | ADR | Decision |
@@ -179,3 +199,7 @@ shared Foundry account; the document has the breakdown and the query.
 | [004](docs/adr/004-model-deployment-sku-and-data-residency.md) | Model deployment SKU, and EU data residency as a one-parameter change |
 | [005](docs/adr/005-no-azure-policy-assignments.md) | Rejection: no Azure Policy assignments at this scale |
 | [006](docs/adr/006-container-registry-basic.md) | Rejection: Container Registry stays Basic rather than Premium with private link |
+
+## Author
+
+**Rodrigo Martín Gómez del Moral Herranz** · [LinkedIn](https://www.linkedin.com/in/rodrigo-mart%C3%ADn-g%C3%B3mez-del-moral-herranz) · [Portfolio](https://rodrigogomez.es)
