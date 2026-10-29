@@ -1,6 +1,8 @@
 # Azure AI Landing Zone
 
-Built by **Rodrigo Martín Gómez del Moral Herranz** · [LinkedIn](https://www.linkedin.com/in/rodrigo-mart%C3%ADn-g%C3%B3mez-del-moral-herranz) · [Portfolio](https://rodrigogomez.es)
+Built by **Rodrigo Martín Gómez del Moral Herranz**
+
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Rodrigo-GomezdelMoral)&nbsp;&nbsp;[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTIwLjQ1IDIwLjQ1aC0zLjU2di01LjU3YzAtMS4zMy0uMDMtMy4wNC0xLjg1LTMuMDQtMS44NSAwLTIuMTQgMS40NS0yLjE0IDIuOTR2NS42N0g5LjM1VjloMy40MXYxLjU2aC4wNWMuNDgtLjkgMS42NC0xLjg1IDMuMzctMS44NSAzLjYgMCA0LjI3IDIuMzcgNC4yNyA1LjQ2djYuMjh6TTUuMzQgNy40M2EyLjA2IDIuMDYgMCAxIDEgMC00LjEyIDIuMDYgMi4wNiAwIDAgMSAwIDQuMTJ6TTcuMTIgMjAuNDVIMy41NlY5aDMuNTZ2MTEuNDV6TTIyLjIyIDBIMS43N0MuNzkgMCAwIC43NyAwIDEuNzN2MjAuNTRDMCAyMy4yMy43OSAyNCAxLjc3IDI0aDIwLjQ1Yy45OCAwIDEuNzgtLjc3IDEuNzgtMS43M1YxLjczQzI0IC43NyAyMy4yIDAgMjIuMjIgMHoiLz48L3N2Zz4%3D)](https://www.linkedin.com/in/rodrigo-mart%C3%ADn-g%C3%B3mez-del-moral-herranz)&nbsp;&nbsp;[![Portfolio](https://img.shields.io/badge/rodrigogomezdelmoralherranz.es-181717?style=for-the-badge&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8%2BPHBhdGggZD0iTTIgMTJoMjBNMTIgMmExNSAxNSAwIDAgMSAwIDIwTTEyIDJhMTUgMTUgMCAwIDAgMCAyMCIvPjwvc3ZnPg%3D%3D)](https://rodrigogomezdelmoralherranz.es)
 
 The shared Azure foundation that four independent AI workloads run on: one resource group holding
 Microsoft Foundry model deployments, Azure AI Search, a container registry and the monitoring and
@@ -9,15 +11,79 @@ budget around them, designed so that **identity, not the network, is the securit
 [![validate](https://github.com/Rodrigo-GomezdelMoral/azure-ai-landing-zone/actions/workflows/validate.yml/badge.svg)](https://github.com/Rodrigo-GomezdelMoral/azure-ai-landing-zone/actions/workflows/validate.yml)
 [![deploy](https://github.com/Rodrigo-GomezdelMoral/azure-ai-landing-zone/actions/workflows/deploy.yml/badge.svg)](https://github.com/Rodrigo-GomezdelMoral/azure-ai-landing-zone/actions/workflows/deploy.yml)
 
+![The shared resource group as deployed, in the Azure portal](docs/images/resource-group.png)
+
+## The problem
+
+Four AI workloads, a regulatory RAG platform, a field-operations copilot, a patient-risk MLOps platform and a multi-tenant SaaS,
+each need some of the same things: model deployments, a search service, a container registry and somewhere to send logs. Built one
+by one, each would pay for its own search service, deploy its own models, keep its own keys and watch its own costs. This repository
+is the foundation they share instead: one resource group whose outputs every workload consumes, where adding a workload means a few
+role assignments rather than another estate, and where no key exists to leak because every service accepts Entra tokens only.
+
+## What it does
+
+- Gives four independent AI workloads one shared base: model deployments in Microsoft Foundry, AI Search, a container registry, Log Analytics and a budget.
+- Makes identity the only way in: every service accepts Entra tokens only, and each workload's identity holds just the data-plane roles it needs.
+- Hands the workloads a stable contract: the deployment outputs, consumed as parameters, never hard-coded names.
+- Keeps the cost visible and low: about 70 to 77 a month, a monthly budget and a tag that attributes spend per repository.
+- Changes only through GitHub Actions with OIDC, after a `what-if` on every pull request.
+
+## Repo card
+
+| | |
+|---|---|
+| **Type** | Cloud platform: the shared foundation of four AI workloads |
+| **Azure services** | Microsoft Foundry (a project and three model deployments), Azure AI Search (Basic), Azure Container Registry (Basic), Log Analytics, an Azure Monitor action group and a Cost Management budget |
+| **Models** | gpt-5-mini, gpt-5-nano and text-embedding-3-small, deployed once for every workload |
+| **Security** | Entra tokens only: local authentication disabled, RBAC-only Search, no registry admin user, no secrets |
+| **Infrastructure and delivery** | Bicep with azd; GitHub Actions with OIDC: `validate` (build, lint and what-if) and a manual `deploy` |
+| **Region** | Sweden Central; AI Search's region is a parameter, `SEARCH_LOCATION` |
+| **Cost** | About 70 to 77 a month, more than ninety percent of it the search service |
+
 ## Architecture
 
 ![The shared group: Foundry with its project and three model deployments, AI Search, the container registry, Log Analytics and the budget, consumed by four workload groups](docs/images/architecture.png)
 
-![The shared resource group as deployed, in the Azure portal](docs/images/resource-group.png)
-
 `docs/architecture.md` has the detailed estate, the identity flows and the deployment sequence.
 
-## Naming convention
+## How it works
+
+### Identity and RBAC
+
+![Every service accepts Entra tokens only; each workload identity holds a data-plane role on the shared services](docs/images/identity.png)
+
+| Principal | Role | Scope | Reason |
+|---|---|---|---|
+| AI Search system-assigned identity | Cognitive Services OpenAI User | Foundry account | the integrated-vectorisation embedding skill calls `text-embedding-3-small` without a key |
+| AI Search system-assigned identity | Cognitive Services User | Foundry account | keyless billing of built-in skills (layout, OCR) attached to a skillset |
+| GitHub Actions principal of this repository | Contributor, Role Based Access Control Administrator | `rg-aiplatform-shared-swc` | deploy the template, including the two role assignments it contains; nothing outside the group |
+| GitHub Actions principal of each workload | Role Based Access Control Administrator | `rg-aiplatform-shared-swc` | grant their own identities roles on Foundry, Search and the registry |
+| Operator | the four data-plane roles above | Search service, Foundry account | run indexing and local tests from a laptop |
+
+Every service accepts Entra tokens only: `disableLocalAuth` on Foundry and on the workspace,
+RBAC-only authentication on Search, no admin user on the registry. There is no Key Vault because
+there is no secret to keep (ADR-003). `docs/security.md` has the full posture.
+
+![The search service in the portal accepting role-based access control only, with API keys off](docs/images/search-rbac.png)
+
+### What the workload repositories consume
+
+The deployment outputs are the interface. Each workload passes them as parameters, references
+the shared resources as `existing`, and scopes its cross-group role assignments to
+`sharedResourceGroupName`:
+
+| Output | Consumed for |
+|---|---|
+| `foundryProjectEndpoint`, `foundryAccountName`, `foundryResourceId`, `foundryProjectName`, `foundryEndpoint` | chat clients, evaluations, role assignments on the account |
+| `chatDeploymentName`, `smallChatDeploymentName`, `embeddingDeploymentName` | the only model names application code ever sees |
+| `searchEndpoint`, `searchServiceName`, `searchResourceId` | index creation and query clients |
+| `searchPrincipalId` | granting the search service `Storage Blob Data Reader` on a workload's own container, in the workload's group |
+| `registryLoginServer`, `registryName` | image push from CI and `AcrPull` for container apps |
+| `logAnalyticsWorkspaceId`, `actionGroupId` | workspace-based Application Insights and alerts routed to the shared receiver |
+| `sharedResourceGroupName` | module scoping for cross-group role assignments |
+
+### Naming convention
 
 `<type>-<workload>-<purpose>-<region>`, lower case, hyphenated, with `swc` for Sweden Central in
 every name. Resource types that forbid hyphens (the container registry) drop them. The three model
@@ -34,7 +100,34 @@ passes the deployment name and any suffix becomes a defect downstream.
 | `ag-` | action group |
 | `budget-` | consumption budget |
 
-## Prerequisites
+## Cost
+
+Estimated from list prices retrieved on 2026-10-14 (`docs/cost.md` has the meters and the
+method): the shared group as deployed costs about **2.3 a day, 70 to 77 a month**, more than
+ninety percent of it the Basic search service; model usage bills tokens only, about 3.6 per
+thousand regulatory questions. The network-isolated posture — private endpoints, private DNS
+zones, a Premium registry and a jump host — would add about **163 a month**, or 257 with a VPN
+gateway (ADR-002). Measured over the eleven full days from 15 to 25 October 2026: 2.28 on a day
+without model usage, as estimated, and 39.76 in total with the model and tool usage billed to the
+shared Foundry account; the document has the breakdown and the query.
+
+![The shared group's monthly budget in the portal, with the spend evaluated so far](docs/images/budget.png)
+
+## Well-Architected design
+
+How the design maps to the five pillars of the Azure Well-Architected Framework, and the trade-off accepted in each.
+
+| Pillar | Applied | Trade-off accepted |
+|---|---|---|
+| Reliability | One shared group whose deployment outputs are a stable interface for four workloads; redeploys are idempotent, and `what-if` on the deployed estate never reports a create or a delete | One region and one instance of each service: redundancy would multiply the cost of an estate that serves demonstrations |
+| Security | Identity is the boundary: Entra tokens only (`disableLocalAuth`, RBAC-only Search, no registry admin user), no secret to keep, OIDC with no client secret | Private networking designed and costed at about 163 a month, not deployed (ADR-002) |
+| Cost Optimization | About 70 to 77 a month, more than ninety percent of it the Basic search service; models bill tokens only; a monthly budget; the `repo` tag attributes cost per repository | A Basic registry rather than Premium with private link (ADR-006) |
+| Operational Excellence | Bicep built and linted on every pull request, `what-if` against the shared group, a manual deployment through the `production` environment, one naming convention | No Azure Policy assignments at this scale (ADR-005) |
+| Performance Efficiency | Three shared model deployments, a chat model, a small chat model and an embedding model, so each workload calls the smallest one that does the job | Shared deployments: one workload's burst competes with the others for the same capacity |
+
+## Deploy
+
+### Prerequisites
 
 The template targets an existing resource group and never creates one. Before the first
 deployment:
@@ -71,41 +164,7 @@ deployment:
    the notification address exported as `ALERT_EMAIL_ADDRESS` or set in the azd environment. The
    address is never committed; `infra/main.bicepparam` reads it from the environment.
 
-## Identity and RBAC
-
-![Every service accepts Entra tokens only; each workload identity holds a data-plane role on the shared services](docs/images/identity.png)
-
-| Principal | Role | Scope | Reason |
-|---|---|---|---|
-| AI Search system-assigned identity | Cognitive Services OpenAI User | Foundry account | the integrated-vectorisation embedding skill calls `text-embedding-3-small` without a key |
-| AI Search system-assigned identity | Cognitive Services User | Foundry account | keyless billing of built-in skills (layout, OCR) attached to a skillset |
-| GitHub Actions principal of this repository | Contributor, Role Based Access Control Administrator | `rg-aiplatform-shared-swc` | deploy the template, including the two role assignments it contains; nothing outside the group |
-| GitHub Actions principal of each workload | Role Based Access Control Administrator | `rg-aiplatform-shared-swc` | grant their own identities roles on Foundry, Search and the registry |
-| Operator | the four data-plane roles above | Search service, Foundry account | run indexing and local tests from a laptop |
-
-Every service accepts Entra tokens only: `disableLocalAuth` on Foundry and on the workspace,
-RBAC-only authentication on Search, no admin user on the registry. There is no Key Vault because
-there is no secret to keep (ADR-003). `docs/security.md` has the full posture.
-
-![The search service in the portal accepting role-based access control only, with API keys off](docs/images/search-rbac.png)
-
-## What the workload repositories consume
-
-The deployment outputs are the interface. Each workload passes them as parameters, references
-the shared resources as `existing`, and scopes its cross-group role assignments to
-`sharedResourceGroupName`:
-
-| Output | Consumed for |
-|---|---|
-| `foundryProjectEndpoint`, `foundryAccountName`, `foundryResourceId`, `foundryProjectName`, `foundryEndpoint` | chat clients, evaluations, role assignments on the account |
-| `chatDeploymentName`, `smallChatDeploymentName`, `embeddingDeploymentName` | the only model names application code ever sees |
-| `searchEndpoint`, `searchServiceName`, `searchResourceId` | index creation and query clients |
-| `searchPrincipalId` | granting the search service `Storage Blob Data Reader` on a workload's own container, in the workload's group |
-| `registryLoginServer`, `registryName` | image push from CI and `AcrPull` for container apps |
-| `logAnalyticsWorkspaceId`, `actionGroupId` | workspace-based Application Insights and alerts routed to the shared receiver |
-| `sharedResourceGroupName` | module scoping for cross-group role assignments |
-
-## Deploy
+### Deploy and verify
 
 ```bash
 azd env new prod && azd env set AZURE_RESOURCE_GROUP rg-aiplatform-shared-swc && azd env set ALERT_EMAIL_ADDRESS <address>
@@ -127,7 +186,7 @@ out of public logs.
 
 ![validate.yml builds, lints and runs what-if on every pull request; deploy.yml runs only by hand, after an approval](docs/images/cicd.png)
 
-### Verify after deploying
+#### Verify after deploying
 
 ```bash
 az resource list -g rg-aiplatform-shared-swc --query "[].{name:name, type:type}" -o table
@@ -144,7 +203,7 @@ does not set (current capacity, deployment state, disabled diagnostic categories
 return although the logs reach their resource-specific tables; it never reports a `Create` or a
 `Delete`.
 
-## Federated credentials for GitHub Actions
+### Federated credentials for GitHub Actions
 
 The deployment identity authenticates with OpenID Connect; no client secret exists. **Three**
 federated credentials are required on the app registration, one per subject GitHub sends:
@@ -164,32 +223,7 @@ A job that declares `environment:` sends the environment subject, not the branch
 third credential is not optional. No workflow in this repository runs on push to `main`, so the
 `ref:refs/heads/main` credential is declared for completeness and exercised by nothing today.
 
-## Cost
-
-Estimated from list prices retrieved on 2026-10-14 (`docs/cost.md` has the meters and the
-method): the shared group as deployed costs about **2.3 a day, 70 to 77 a month**, more than
-ninety percent of it the Basic search service; model usage bills tokens only, about 3.6 per
-thousand regulatory questions. The network-isolated posture — private endpoints, private DNS
-zones, a Premium registry and a jump host — would add about **163 a month**, or 257 with a VPN
-gateway (ADR-002). Measured over the eleven full days from 15 to 25 October 2026: 2.28 on a day
-without model usage, as estimated, and 39.76 in total with the model and tool usage billed to the
-shared Foundry account; the document has the breakdown and the query.
-
-![The shared group's monthly budget in the portal, with the spend evaluated so far](docs/images/budget.png)
-
-## Well-Architected design
-
-How the design maps to the five pillars of the Azure Well-Architected Framework, and the trade-off accepted in each.
-
-| Pillar | Applied | Trade-off accepted |
-|---|---|---|
-| Reliability | One shared group whose deployment outputs are a stable interface for four workloads; redeploys are idempotent, and `what-if` on the deployed estate never reports a create or a delete | One region and one instance of each service: redundancy would multiply the cost of an estate that serves demonstrations |
-| Security | Identity is the boundary: Entra tokens only (`disableLocalAuth`, RBAC-only Search, no registry admin user), no secret to keep, OIDC with no client secret | Private networking designed and costed at about 163 a month, not deployed (ADR-002) |
-| Cost Optimization | About 70 to 77 a month, more than ninety percent of it the Basic search service; models bill tokens only; a monthly budget; the `repo` tag attributes cost per repository | A Basic registry rather than Premium with private link (ADR-006) |
-| Operational Excellence | Bicep built and linted on every pull request, `what-if` against the shared group, a manual deployment through the `production` environment, one naming convention | No Azure Policy assignments at this scale (ADR-005) |
-| Performance Efficiency | Three shared model deployments, a chat model, a small chat model and an embedding model, so each workload calls the smallest one that does the job | Shared deployments: one workload's burst competes with the others for the same capacity |
-
-## Architecture decision records
+## Decisions
 
 | ADR | Decision |
 |---|---|
@@ -202,4 +236,6 @@ How the design maps to the five pillars of the Azure Well-Architected Framework,
 
 ## Author
 
-**Rodrigo Martín Gómez del Moral Herranz** · [LinkedIn](https://www.linkedin.com/in/rodrigo-mart%C3%ADn-g%C3%B3mez-del-moral-herranz) · [Portfolio](https://rodrigogomez.es)
+**Rodrigo Martín Gómez del Moral Herranz**
+
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Rodrigo-GomezdelMoral)&nbsp;&nbsp;[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTIwLjQ1IDIwLjQ1aC0zLjU2di01LjU3YzAtMS4zMy0uMDMtMy4wNC0xLjg1LTMuMDQtMS44NSAwLTIuMTQgMS40NS0yLjE0IDIuOTR2NS42N0g5LjM1VjloMy40MXYxLjU2aC4wNWMuNDgtLjkgMS42NC0xLjg1IDMuMzctMS44NSAzLjYgMCA0LjI3IDIuMzcgNC4yNyA1LjQ2djYuMjh6TTUuMzQgNy40M2EyLjA2IDIuMDYgMCAxIDEgMC00LjEyIDIuMDYgMi4wNiAwIDAgMSAwIDQuMTJ6TTcuMTIgMjAuNDVIMy41NlY5aDMuNTZ2MTEuNDV6TTIyLjIyIDBIMS43N0MuNzkgMCAwIC43NyAwIDEuNzN2MjAuNTRDMCAyMy4yMy43OSAyNCAxLjc3IDI0aDIwLjQ1Yy45OCAwIDEuNzgtLjc3IDEuNzgtMS43M1YxLjczQzI0IC43NyAyMy4yIDAgMjIuMjIgMHoiLz48L3N2Zz4%3D)](https://www.linkedin.com/in/rodrigo-mart%C3%ADn-g%C3%B3mez-del-moral-herranz)&nbsp;&nbsp;[![Portfolio](https://img.shields.io/badge/rodrigogomezdelmoralherranz.es-181717?style=for-the-badge&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8%2BPHBhdGggZD0iTTIgMTJoMjBNMTIgMmExNSAxNSAwIDAgMSAwIDIwTTEyIDJhMTUgMTUgMCAwIDAgMCAyMCIvPjwvc3ZnPg%3D%3D)](https://rodrigogomezdelmoralherranz.es)
