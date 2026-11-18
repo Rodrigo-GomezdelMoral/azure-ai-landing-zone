@@ -26,7 +26,7 @@ ADR-003 records why keys are disabled rather than vaulted, and what RBAC-only me
 | GitHub Actions principal of this repository | Contributor, Role Based Access Control Administrator | this resource group | deploy the template, including its two role assignments; no permission outside the group |
 | GitHub Actions principal of each workload | Role Based Access Control Administrator | this resource group | grant their own identities roles on Foundry, Search and the registry |
 | Operator account | Search Service Contributor, Search Index Data Contributor, Cognitive Services OpenAI User, Foundry User | Search service, Foundry account | create indexes and run local tests from a laptop; subscription ownership does not confer data-plane access |
-| Foundry project system-assigned identity | none | — | reserved for project-side connections; no grant is needed for the workloads' use |
+| Foundry project system-assigned identity | none | - | reserved for project-side connections; no grant is needed for the workloads' use |
 
 Grants to workload identities live in the workload repositories, next to the identity that
 receives them, through a module scoped to this group. This repository only exports what those

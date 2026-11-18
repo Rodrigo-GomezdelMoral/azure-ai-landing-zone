@@ -23,7 +23,7 @@ registry per day; a month is 30.4 days.
 
 Premium with a private endpoint adds the endpoint itself (0.0088 an hour, about 6.4 a month) and
 the `privatelink.azurecr.io` zone (0.44 a month), so the private registry costs about **51.5 a
-month against 4.5** — the difference is close to the entire fixed cost of the rest of the shared
+month against 4.5**: the difference is close to the entire fixed cost of the rest of the shared
 group.
 
 ## Decision
@@ -31,17 +31,17 @@ group.
 Basic. The registry's job is to hold a handful of images for pulls that authenticate with
 `AcrPull` through managed identities; the admin user is disabled and anonymous pull is never
 enabled, so the public endpoint accepts no request without a token. Ten gibibytes covers the
-portfolio's images several times over, and the Basic throughput limits are far above a few
+workloads' images several times over, and the Basic throughput limits are far above a few
 pushes a day.
 
 What Premium would add, and why none of it is bought today:
 
-- **Private link** — the network decision is made in ADR-002, for the whole estate, and this
+- **Private link**: the network decision is made in ADR-002, for the whole estate, and this
   registry follows it.
-- **Geo-replication** — one region.
-- **Content trust and dedicated data endpoints** — no signing pipeline exists yet; the day images
+- **Geo-replication**: one region.
+- **Content trust and dedicated data endpoints**: no signing pipeline exists yet; the day images
   are signed, Premium is the prerequisite and this record is where that is noted.
-- **Retention policies and higher webhook counts** — not needed at this image count.
+- **Retention policies and higher webhook counts**: not needed at this image count.
 
 ## Trade-offs
 

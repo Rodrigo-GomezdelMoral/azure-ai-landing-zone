@@ -6,7 +6,7 @@
 
 The controls this platform relies on are properties of resources: local authentication disabled,
 RBAC-only search, no admin user on the registry, five tags on everything. Azure Policy can
-enforce the same properties as guardrails — deny a Cognitive Services account that accepts keys,
+enforce the same properties as guardrails: deny a Cognitive Services account that accepts keys,
 append missing tags, audit search services that still accept API keys. An earlier version of
 this repository assigned three built-in policies for exactly that purpose, and the assignments
 were the first thing to break: definition ids that differ by cloud, scope rules that a
@@ -32,9 +32,9 @@ templates, across subscriptions a platform team does not author. In this estate 
 writes every template, every template is reviewed in a pull request that runs `what-if`, and the
 properties a policy would check are literally the lines of Bicep under review. A policy
 assignment here would check the author's work against the author's own rule, add a third
-principal permission, and produce compliance data nobody reads — governance theatre, with a
+principal permission, and produce compliance data nobody reads: governance theatre, with a
 real maintenance cost (a definition id is a GUID that changes between clouds, and the hygiene
-rule of this portfolio forbids committing GUIDs that are not public constants).
+rule of this repository forbids committing GUIDs that are not public constants).
 
 What is kept from the idea:
 
@@ -52,7 +52,7 @@ What is kept from the idea:
   review is the control, and it depends on the reviewer reading the diff.
 - Nothing stops a resource created by hand in the portal from violating the posture. Nothing is
   created by hand in this estate; the moment that stops being true is a revisit condition.
-- The portfolio does not demonstrate Azure Policy authoring. That gap is stated rather than
+- This repository does not demonstrate Azure Policy authoring. That gap is stated rather than
   filled with a token assignment.
 
 ## Revisit when

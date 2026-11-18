@@ -8,7 +8,7 @@ Every service in this estate exposes a public endpoint. The conventional reading
 public endpoint is a risk, and the conventional remedy is private link: a private endpoint per
 service, a private DNS zone per service family, a virtual network that everything joins, and
 `publicNetworkAccess: Disabled` to close the public door. An earlier version of this platform
-did exactly that — one hub group, fourteen private DNS zones, seven private endpoints — and the
+did exactly that (one hub group, fourteen private DNS zones, seven private endpoints), and the
 result was an estate the operator could not operate.
 
 The question this record answers is not *"is private link good"*. It is: **what does private
@@ -65,21 +65,21 @@ where the meter is regional (`Standard Private Endpoint`, `Private Zone`, `Basic
 | **Total with a jump host** | | | **≈ 163** |
 | Alternative to the jump host: a `VpnGw1` gateway for point-to-site access | 0.1672 / hour | 730 hours | 122 instead of 28 |
 
-The estate's fixed cost without any of this is about 70 a month (`docs/cost.md`), nearly all of
+The estate's fixed cost without any of this is about 70 a month ([`docs/cost.md`](../cost.md)), nearly all of
 it the search service. Private networking would more than triple the fixed cost before the first
-query, and the jump host or gateway is not optional — it is the operational consequence below.
+query, and the jump host or gateway is not optional: it is the operational consequence below.
 
 ## The consequence that decides it
 
 With `publicNetworkAccess: Disabled`, **the operator is outside the boundary.** Concretely, from
-the laptop that builds this portfolio:
+the laptop that builds the workloads:
 
-- `ops/index.py` cannot create the index, the skillset or the indexer; the search service refuses
+- A workload's indexing script cannot create the index, the skillset or the indexer; the search service refuses
   the connection before authentication.
 - `azd deploy` cannot reach the services it configures after provisioning, and local integration
   tests cannot run.
-- GitHub-hosted runners are equally outside, so every data-plane step in CI — index creation,
-  evaluation runs, smoke tests — needs a self-hosted runner inside the network.
+- GitHub-hosted runners are equally outside, so every data-plane step in CI (index creation,
+  evaluation runs, smoke tests) needs a self-hosted runner inside the network.
 - Even `az search service show` with a `--query` on data-plane state fails.
 
 Everything operational therefore moves to a jump host or a point-to-site VPN: a machine to patch,
@@ -90,15 +90,15 @@ that is already authenticated, encrypted in transit and authorised by role.
 
 ## Options considered
 
-1. **Full private link, public access disabled** — the design above. Rejected for the reason
+1. **Full private link, public access disabled**: the design above. Rejected for the reason
    above; the design is kept so that the rejection is informed rather than lazy.
-2. **Private endpoints for the workloads only, public access kept for the operator** — pays for
+2. **Private endpoints for the workloads only, public access kept for the operator**: pays for
    the endpoints without gaining the control, because the public door stays open. Rejected as
    the worst of both.
-3. **Network Security Perimeter** — a newer control that groups PaaS resources behind a logical
+3. **Network Security Perimeter**: a newer control that groups PaaS resources behind a logical
    perimeter without a virtual network. It closes the same door for the same operator; the
    consequence is identical. Noted as the cheaper first step if the decision reverses.
-4. **Identity as the boundary, network documented** — this record.
+4. **Identity as the boundary, network documented**: this record.
 
 ## Decision
 
