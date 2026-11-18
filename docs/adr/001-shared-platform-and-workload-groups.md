@@ -4,8 +4,8 @@
 
 ## Context
 
-Four AI workloads — a regulatory RAG platform, a field-operations copilot, a care-intelligence
-MLOps pipeline and a multi-tenant SaaS gateway — need model deployments, a vector index, a
+Four AI workloads (a regulatory RAG platform, a field-operations copilot, a care-intelligence
+MLOps pipeline and a multi-tenant SaaS gateway) need model deployments, a vector index, a
 container registry and monitoring. Each is a separate public repository with its own deployment
 identity, its own lifecycle and its own `azd down` at the end of a demo cycle.
 
@@ -17,7 +17,7 @@ each repository is allowed to touch.
 1. **Everything per workload.** Each repository provisions its own Foundry account, search service
    and registry. Simplest ownership; four AI Search services at roughly €70 a month each, four
    sets of model quota, four registries, and no way to compare workloads on one bill.
-2. **One group for the whole portfolio.** Everything in `rg-aiplatform-swc`. Cheapest and
+2. **One group for all the workloads.** Everything in `rg-aiplatform-swc`. Cheapest and
    simplest, but `azd down` in one repository would destroy the index of another, and the CI
    principal of every repository would need write access to every resource.
 3. **One shared group plus one group per workload.** The shared group holds what is expensive,
@@ -31,10 +31,10 @@ Option 3. Five resource groups, created once by a bootstrap script and never by 
 | Group | Holds | Owned by |
 |---|---|---|
 | `rg-aiplatform-shared-swc` | Log Analytics, Foundry account and project, model deployments, AI Search, Container Registry, action group, budget | this repository |
-| `rg-ragplatform-prod-swc` | storage, Cosmos DB, Container Apps, identities, workload role assignments | `azure-rag-platform` |
-| `rg-fopcopilot-prod-swc` | the same shape plus Event Grid | `azure-field-operations-copilot` |
-| `rg-careintel-prod-swc` | Azure ML workspace, PostgreSQL, API | `azure-care-intelligence-platform` |
-| `rg-aisaas-prod-swc` | AKS, Redis, Cosmos DB, Service Bus, Functions, Key Vault | `azure-ai-saas-platform` |
+| `rg-ragplatform-prod-swc` | storage, Cosmos DB, Container Apps, identities, workload role assignments | the regulatory RAG platform |
+| `rg-fopcopilot-prod-swc` | the same shape plus Event Grid | the field-operations copilot |
+| `rg-careintel-prod-swc` | Azure ML workspace, PostgreSQL, API | the care-intelligence MLOps pipeline |
+| `rg-aisaas-prod-swc` | AKS, Redis, Cosmos DB, Service Bus, Functions, Key Vault | the multi-tenant SaaS gateway |
 
 The rule for placement: **a resource lives in the shared group if destroying it would break a
 workload other than the one that created it, or if it carries a quota or a fixed cost that should
@@ -60,7 +60,7 @@ Consequences that follow from the rule:
   the day that becomes confusing, a project per workload is a ten-line change and one extra role
   assignment each.
 - Shared quota. A runaway workload can consume the model deployment's tokens-per-minute for the
-  others. Acceptable at portfolio scale; in production each workload would get its own deployment
+  others. Acceptable at this scale; in production each workload would get its own deployment
   on the same account.
 
 ## Revisit when

@@ -34,7 +34,7 @@ same API call (the `DataZoneStandard` figures, ten percent higher, are in ADR-00
 
 Worked example, estimated: a regulatory question that plans with `gpt-5-nano` (1,000 tokens in,
 200 out), reranks and answers with `gpt-5-mini` (two calls, 8,000 tokens in and 1,000 out in
-total) costs about 0.0036 — roughly 3.6 per thousand questions. Indexing a corpus of a few
+total) costs about 0.0036, roughly 3.6 per thousand questions. Indexing a corpus of a few
 thousand pages through the embedding deployment adds cents.
 
 ## What the posture costs elsewhere
